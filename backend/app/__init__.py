@@ -1,0 +1,2 @@
+"""SecureAgent Vault backend package."""
+

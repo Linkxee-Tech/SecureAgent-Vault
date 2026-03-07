@@ -20,9 +20,30 @@ async function apiFetch(path, accessToken, options = {}) {
     return null;
   }
 
-  const payload = await response.json();
+  const contentType = response.headers.get("content-type");
+  let payload;
+
+  try {
+    if (contentType && contentType.includes("application/json")) {
+      payload = await response.json();
+    } else {
+      const text = await response.text();
+      // If we expected JSON but got something else (like an HTML error page)
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${text.slice(0, 100)}`);
+      }
+      return text;
+    }
+  } catch (err) {
+    if (err.name === "SyntaxError") {
+      const text = await response.text().catch(() => "unavailable");
+      throw new Error(`Invalid JSON response from server: ${text.slice(0, 100)}`);
+    }
+    throw err;
+  }
+
   if (!response.ok) {
-    throw new Error(payload.detail || "Request failed");
+    throw new Error(payload?.detail || `Request failed with status ${response.status}`);
   }
   return payload;
 }

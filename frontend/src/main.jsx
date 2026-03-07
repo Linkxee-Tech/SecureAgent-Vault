@@ -78,8 +78,16 @@ function Bootstrap() {
       try {
         const response = await fetch(`${API_BASE_URL}/config/public`);
         if (!response.ok) {
-          throw new Error(`Backend config request failed with ${response.status}`);
+          const text = await response.text().catch(() => "");
+          throw new Error(`Backend config request failed with ${response.status}: ${text.slice(0, 50)}`);
         }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await response.text().catch(() => "");
+          throw new Error(`Expected JSON config but received ${contentType || "unknown"}: ${text.slice(0, 50)}`);
+        }
+
         const payload = await response.json();
         if (payload.dev_bypass_auth) {
           setState({

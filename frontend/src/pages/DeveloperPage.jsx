@@ -80,7 +80,7 @@ print(f"Vault Token: {token}")`;
             <div className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
                 <h2 className="text-lg font-semibold text-slate-900">Developer Integration</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                    Connect your AI agents to the SecureAgent Vault using our simplified REST API.
+                    Connect your agents to the SecureAgent Vault using our simplified REST API.
                 </p>
             </div>
 

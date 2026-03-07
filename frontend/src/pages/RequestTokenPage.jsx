@@ -115,7 +115,7 @@ export default function RequestTokenPage({ getAccessToken }) {
             <div className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
                 <h2 className="text-lg font-semibold text-slate-900">Request Agent Token</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                    Simulate an AI agent requesting a short-lived scoped token from the vault.
+                    Simulate an agent requesting a short-lived scoped token from the vault.
                 </p>
             </div>
 

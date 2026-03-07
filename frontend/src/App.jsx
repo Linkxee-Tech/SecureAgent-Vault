@@ -104,7 +104,7 @@ function AuthenticatedApp() {
     return getAccessTokenSilently({
       authorizationParams: {
         audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-        scope: import.meta.env.VITE_AUTH0_SCOPE || "read:agents write:agents read:audit admin",
+        scope: import.meta.env.VITE_AUTH0_SCOPE || "openid profile email offline_access name read:agents write:agents read:audit admin",
       },
     });
   }, [getAccessTokenSilently]);

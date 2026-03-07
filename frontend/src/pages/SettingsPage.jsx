@@ -1,9 +1,35 @@
+import { useState } from "react";
 import {
     UserCircleIcon,
     ShieldCheckIcon,
     ArrowTopRightOnSquareIcon,
+    PencilSquareIcon,
+    CheckIcon,
+    XMarkIcon
 } from "@heroicons/react/24/outline";
+
 export default function SettingsPage({ user }) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState(user?.name || "");
+    const [isSaving, setIsSaving] = useState(false);
+    const [savedName, setSavedName] = useState(user?.name || "");
+    const [toastMsg, setToastMsg] = useState(null);
+
+    const handleSaveProfile = async () => {
+        setIsSaving(true);
+        // Simulate an API call to update the user profile
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        setSavedName(editName);
+        setIsEditing(false);
+        setIsSaving(false);
+        setToastMsg("Profile updated successfully");
+        setTimeout(() => setToastMsg(null), 3000);
+    };
+
+    const handleCancelEdit = () => {
+        setEditName(savedName);
+        setIsEditing(false);
+    };
 
     return (
         <div className="space-y-6">
@@ -24,14 +50,61 @@ export default function SettingsPage({ user }) {
                         <h3 className="text-lg font-semibold text-slate-900">User Profile</h3>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-4 relative">
+                        {toastMsg && (
+                            <div className="absolute -top-12 left-0 right-0 flex justify-center animate-in fade-in slide-in-from-top-4">
+                                <div className="rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-white shadow-lg mx-auto flex items-center gap-2">
+                                    <CheckIcon className="h-4 w-4" />
+                                    {toastMsg}
+                                </div>
+                            </div>
+                        )}
+
                         <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                Full Name
-                            </label>
-                            <p className="mt-1 text-sm font-medium text-slate-900">
-                                {user?.name || "N/A"}
-                            </p>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                    Full Name
+                                </label>
+                                {!isEditing && (
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                                    >
+                                        <PencilSquareIcon className="h-3.5 w-3.5" />
+                                        Edit
+                                    </button>
+                                )}
+                            </div>
+
+                            {isEditing ? (
+                                <div className="flex items-center gap-2 mt-2">
+                                    <input
+                                        type="text"
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        disabled={isSaving}
+                                        className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                                    />
+                                    <button
+                                        onClick={handleSaveProfile}
+                                        disabled={isSaving}
+                                        className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
+                                    >
+                                        {isSaving ? "Saving..." : <><CheckIcon className="h-4 w-4" /> Save</>}
+                                    </button>
+                                    <button
+                                        onClick={handleCancelEdit}
+                                        disabled={isSaving}
+                                        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                                    >
+                                        <XMarkIcon className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <p className="text-sm font-medium text-slate-900">
+                                    {savedName || "N/A"}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">

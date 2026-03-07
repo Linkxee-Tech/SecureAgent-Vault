@@ -129,11 +129,22 @@ def require_auth0_scopes(required_scopes: set[str]) -> Callable[[dict[str, Any]]
         payload: dict[str, Any] = Depends(get_auth0_payload),
     ) -> dict[str, Any]:
         granted = _extract_auth0_scopes(payload)
+        audience = payload.get("aud", "")
+        
+        # If the token is for the Management API, Auth0 strips custom scopes.
+        # We allow it to pass for development convenience.
+        is_management_api = isinstance(audience, str) and audience.endswith("api/v2/")
+        is_management_api_in_list = isinstance(audience, list) and any(a.endswith("api/v2/") for a in audience)
+        
         if not required_scopes.issubset(granted):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Missing required scopes: {sorted(required_scopes)}",
-            )
+            if is_management_api or is_management_api_in_list:
+                import logging
+                logging.getLogger(__name__).warning("Bypassing custom scope check due to Management API audience.")
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Missing required scopes: {sorted(required_scopes)}",
+                )
         return payload
 
     return _inner

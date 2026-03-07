@@ -83,6 +83,8 @@ class Auth0Validator:
             )
 
         public_key = RSAAlgorithm.from_jwk(json.dumps(jwk))
+        import logging
+        logger = logging.getLogger(__name__)
         try:
             payload = jwt.decode(
                 token,
@@ -92,6 +94,7 @@ class Auth0Validator:
                 issuer=self._settings.auth0_issuer,
             )
         except jwt.InvalidTokenError as exc:
+            logger.error(f"JWT Validation failed: {exc}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid Auth0 access token.",

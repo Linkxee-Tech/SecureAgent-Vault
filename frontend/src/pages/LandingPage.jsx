@@ -34,7 +34,7 @@ export default function LandingPage() {
                         SecureAgent <span className="text-blue-500">Vault</span>
                     </h1>
                     <p className="mt-6 text-xl leading-relaxed text-slate-300">
-                        The standard for securing how AI agents access tools, APIs, and data.
+                        The standard for securing how agents access tools, APIs, and data.
                         Replace static keys with short-lived, scoped credentials.
                     </p>
 

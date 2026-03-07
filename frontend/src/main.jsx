@@ -65,7 +65,7 @@ function Bootstrap() {
           domain: requiredAuthEnv.VITE_AUTH0_DOMAIN,
           clientId: requiredAuthEnv.VITE_AUTH0_CLIENT_ID,
           audience: requiredAuthEnv.VITE_AUTH0_AUDIENCE,
-          scope: import.meta.env.VITE_AUTH0_SCOPE || "read:agents write:agents read:audit admin",
+          scope: import.meta.env.VITE_AUTH0_SCOPE || "openid profile email offline_access read:agents write:agents read:audit admin",
           source: "frontend-env",
         },
         missingKeys: [],
@@ -110,7 +110,7 @@ function Bootstrap() {
               scope:
                 import.meta.env.VITE_AUTH0_SCOPE ||
                 payload.auth0_scope ||
-                "read:agents write:agents read:audit admin",
+                "openid profile email offline_access read:agents write:agents read:audit admin",
               source: "backend-public-config",
             },
             missingKeys: [],

@@ -179,7 +179,7 @@ function Bootstrap() {
       domain={state.authConfig.domain}
       clientId={state.authConfig.clientId}
       authorizationParams={{
-        redirect_uri: window.location.origin,
+        redirect_uri: window.location.origin + "/callback",
         audience: state.authConfig.audience,
       }}
       cacheLocation="localstorage"

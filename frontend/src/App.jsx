@@ -14,6 +14,7 @@ import TokenInspectorPage from "./pages/TokenInspectorPage";
 import SecurityInsightsPage from "./pages/SecurityInsightsPage";
 import DeveloperPage from "./pages/DeveloperPage";
 import { NotFoundPage } from "./pages/ErrorPages";
+import Callback from "./pages/Callback";
 import TopNavbar from "./components/TopNavbar";
 
 export default function App(props) {
@@ -92,6 +93,7 @@ function BypassApp() {
           />
         }
       />
+      <Route path="/callback" element={<Callback />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
@@ -143,6 +145,7 @@ function AuthenticatedApp() {
           )
         }
       />
+      <Route path="/callback" element={<Callback />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -181,6 +181,7 @@ function Bootstrap() {
       authorizationParams={{
         redirect_uri: window.location.origin + "/callback",
         audience: state.authConfig.audience,
+        scope: state.authConfig.scope,
       }}
       cacheLocation="localstorage"
       useRefreshTokens

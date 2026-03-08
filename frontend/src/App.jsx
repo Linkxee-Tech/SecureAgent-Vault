@@ -103,12 +103,7 @@ function AuthenticatedApp() {
   const { isAuthenticated, isLoading, logout, user, getAccessTokenSilently } = useAuth0();
 
   const getAccessToken = useCallback(() => {
-    return getAccessTokenSilently({
-      authorizationParams: {
-        audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-        scope: import.meta.env.VITE_AUTH0_SCOPE || "openid profile email offline_access name read:agents write:agents read:audit admin",
-      },
-    });
+    return getAccessTokenSilently();
   }, [getAccessTokenSilently]);
 
   if (isLoading) {

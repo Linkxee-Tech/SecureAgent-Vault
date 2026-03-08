@@ -1,4 +1,12 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+let API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+
+// Auto-correct common configuration mistake where the Vercel environment variable
+// is set to just the root domain (e.g. https://secureagent-vault.onrender.com)
+// without the required /api/v1 suffix.
+if (API_BASE_URL.startsWith("http") && !API_BASE_URL.includes("/api/v1")) {
+  API_BASE_URL = API_BASE_URL.replace(/\/$/, "") + "/api/v1";
+}
+
 
 async function apiFetch(path, accessToken, options = {}) {
   const headers = new Headers(options.headers || {});

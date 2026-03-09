@@ -28,8 +28,7 @@ export default function AgentDetailPage({
   getAccessToken,
   onAgentUpdated,
   onAgentDeleted,
-  onRefreshAgents,
-  rbac = {}
+  onRefreshAgents
 }) {
   const [name, setName] = useState("");
   const [scopesRaw, setScopesRaw] = useState("");
@@ -207,95 +206,80 @@ export default function AgentDetailPage({
               checked={isActive}
               onChange={(event) => setIsActive(event.target.checked)}
               type="checkbox"
-              disabled={!rbac?.canUpdateAgents}
-              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500/20"
             />
             <label htmlFor="is-active" className="text-sm font-medium text-slate-700">
               Agent is active (can request tokens)
             </label>
           </div>
 
-          {rbac?.canUpdateAgents && (
-            <button
-              type="submit"
-              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
-              disabled={saving}
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
-          )}
+          <button
+            type="submit"
+            className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
         </form>
       </div>
 
       {/* Security Actions */}
-      {(rbac?.canRotateSecret || rbac?.canUpdateAgents) && (
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-          <h3 className="text-base font-semibold text-slate-900">Security Credentials</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            Rotate core secrets or store encrypted external API keys.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {rbac?.canRotateSecret && (
-              <button
-                className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                onClick={onRotateSecret}
-              >
-                <ArrowPathIcon className="h-4 w-4" />
-                Rotate Agent Secret
-              </button>
-            )}
-            {rbac?.canUpdateAgents && (
-              <button
-                className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                onClick={() => setApiKeyModalOpen(true)}
-              >
-                <KeyIcon className="h-4 w-4" />
-                Store API Key
-              </button>
-            )}
-          </div>
+      <div className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+        <h3 className="text-base font-semibold text-slate-900">Security Credentials</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          Rotate core secrets or store encrypted external API keys.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            onClick={onRotateSecret}
+          >
+            <ArrowPathIcon className="h-4 w-4" />
+            Rotate Agent Secret
+          </button>
+          <button
+            className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            onClick={() => setApiKeyModalOpen(true)}
+          >
+            <KeyIcon className="h-4 w-4" />
+            Store API Key
+          </button>
         </div>
-      )}
+      </div>
 
       {/* Danger Zone */}
-      {(rbac?.canRevokeAgent || rbac?.canDeleteAgents) && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/30 p-6 shadow-sm">
-          <h3 className="text-base font-semibold text-rose-900">Danger Zone</h3>
-          <p className="mt-1 text-sm text-rose-700">
-            High-impact security actions. IRM protocols apply.
-          </p>
+      <div className="rounded-2xl border border-rose-200 bg-rose-50/30 p-6 shadow-sm">
+        <h3 className="text-base font-semibold text-rose-900">Danger Zone</h3>
+        <p className="mt-1 text-sm text-rose-700">
+          High-impact security actions. IRM protocols apply.
+        </p>
 
-          <div className="mt-6 flex flex-wrap gap-4">
-            {rbac?.canRevokeAgent && (
-              <div className="flex-1 min-w-[200px]">
-                <p className="text-sm font-medium text-slate-900">Revoke All Access</p>
-                <p className="text-xs text-slate-600 mt-1">Immediately blacklist all active tokens and deactivate agent.</p>
-                <button
-                  className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100"
-                  onClick={() => setRevokeModalOpen(true)}
-                >
-                  <ShieldExclamationIcon className="h-4 w-4" />
-                  Revoke & Deactivate
-                </button>
-              </div>
-            )}
+        <div className="mt-6 flex flex-wrap gap-4">
+          <div className="flex-1 min-w-[200px]">
+            <p className="text-sm font-medium text-slate-900">Revoke All Access</p>
+            <p className="text-xs text-slate-600 mt-1">Immediately blacklist all active tokens and deactivate agent.</p>
+            <button
+              className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100"
+              onClick={() => setRevokeModalOpen(true)}
+            >
+              <ShieldExclamationIcon className="h-4 w-4" />
+              Revoke & Deactivate
+            </button>
+          </div>
 
-            {rbac?.canDeleteAgents && (
-              <div className="flex-1 min-w-[200px]">
-                <p className="text-sm font-medium text-slate-900">Delete Agent</p>
-                <p className="text-xs text-slate-600 mt-1">Permanently remove agent and all associated audit references.</p>
-                <button
-                  className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100"
-                  onClick={() => setDeleteModalOpen(true)}
-                >
-                  <TrashIcon className="h-4 w-4" />
-                  Delete Permanently
-                </button>
-              </div>
-            )}
+          <div className="flex-1 min-w-[200px]">
+            <p className="text-sm font-medium text-slate-900">Delete Agent</p>
+            <p className="text-xs text-slate-600 mt-1">Permanently remove agent and all associated audit references.</p>
+            <button
+              className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100"
+              onClick={() => setDeleteModalOpen(true)}
+            >
+              <TrashIcon className="h-4 w-4" />
+              Delete Permanently
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Modals */}
       <ConfirmModal
@@ -343,4 +327,3 @@ export default function AgentDetailPage({
     </section>
   );
 }
-

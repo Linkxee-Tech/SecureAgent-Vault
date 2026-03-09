@@ -264,7 +264,6 @@ function ControlPlaneApp({
                 selectedAgentId={selectedAgent?.id}
                 reloadKey={reloadKey}
                 onAgentsLoaded={onAgentsLoaded}
-                rbac={rbac}
               />
             ) : null}
 
@@ -280,7 +279,6 @@ function ControlPlaneApp({
                   setTab("agents");
                 }}
                 onRefreshAgents={refreshAgents}
-                rbac={rbac}
               />
             ) : null}
 

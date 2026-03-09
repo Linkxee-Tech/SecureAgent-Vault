@@ -25,8 +25,7 @@ export default function AgentsPage({
   onSelectAgent,
   selectedAgentId,
   reloadKey,
-  onAgentsLoaded,
-  rbac = {}
+  onAgentsLoaded
 }) {
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -199,37 +198,35 @@ export default function AgentsPage({
   return (
     <section className="space-y-6">
       {/* Create Agent Card */}
-      {rbac?.canCreateAgents ? (
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">Register New Agent</h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Active agents: <span className="font-semibold text-emerald-600">{totalActive}</span> / {agents.length}
-              </p>
-            </div>
+      <div className="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Register New Agent</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Active agents: <span className="font-semibold text-emerald-600">{totalActive}</span> / {agents.length}
+            </p>
           </div>
-          <form className="mt-4 grid gap-3 md:grid-cols-[1fr_2fr_auto]" onSubmit={onCreateAgent}>
-            <input
-              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="WeatherBot"
-              required
-            />
-            <input
-              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              value={scopes}
-              onChange={(event) => setScopes(event.target.value)}
-              placeholder="read:weather,write:calendar"
-            />
-            <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700">
-              <PlusIcon className="h-4 w-4" />
-              Create
-            </button>
-          </form>
         </div>
-      ) : null}
+        <form className="mt-4 grid gap-3 md:grid-cols-[1fr_2fr_auto]" onSubmit={onCreateAgent}>
+          <input
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="WeatherBot"
+            required
+          />
+          <input
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            value={scopes}
+            onChange={(event) => setScopes(event.target.value)}
+            placeholder="read:weather,write:calendar"
+          />
+          <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+            <PlusIcon className="h-4 w-4" />
+            Create
+          </button>
+        </form>
+      </div>
 
       {/* Secret Flash */}
       {secretFlash ? (
@@ -348,47 +345,39 @@ export default function AgentsPage({
                             }
                           }}
                         >
-                          {rbac?.canUpdateAgents ? "Edit" : "View"}
+                          Edit
                         </button>
 
-                        {rbac?.canUpdateAgents && (
-                          <button
-                            className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${agent.is_active
-                              ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
-                              : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                              }`}
-                            onClick={() => onToggleActive(agent)}
-                          >
-                            {agent.is_active ? "Deactivate" : "Activate"}
-                          </button>
-                        )}
+                        <button
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${agent.is_active
+                            ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                            : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            }`}
+                          onClick={() => onToggleActive(agent)}
+                        >
+                          {agent.is_active ? "Deactivate" : "Activate"}
+                        </button>
 
-                        {rbac?.canRotateSecret && (
-                          <button
-                            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                            onClick={() => onRotateSecret(agent.id)}
-                          >
-                            Rotate
-                          </button>
-                        )}
+                        <button
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                          onClick={() => onRotateSecret(agent.id)}
+                        >
+                          Rotate
+                        </button>
 
-                        {rbac?.canUpdateAgents && (
-                          <button
-                            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                            onClick={() => onStoreApiKeyClick(agent.id, agent.name)}
-                          >
-                            Store Key
-                          </button>
-                        )}
+                        <button
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                          onClick={() => onStoreApiKeyClick(agent.id, agent.name)}
+                        >
+                          Store Key
+                        </button>
 
-                        {rbac?.canDeleteAgents && (
-                          <button
-                            className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100"
-                            onClick={() => onDeleteAgent(agent.id)}
-                          >
-                            Delete
-                          </button>
-                        )}
+                        <button
+                          className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-100"
+                          onClick={() => onDeleteAgent(agent.id)}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>

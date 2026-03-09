@@ -21,7 +21,7 @@ Create or select an Auth0 tenant.
    - Allowed Logout URLs: `http://localhost:5173`
    - Allowed Web Origins: `http://localhost:5173`
 
-## 4. Environment Vectors
+## 4. Environment Configuration
 
 `backend/.env`:
 ```ini

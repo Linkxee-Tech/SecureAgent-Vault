@@ -8,7 +8,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { listAgents, listAudit } from "../services/api";
 
-export default function DashboardPage({ getAccessToken, onSelectAgent, userName = "" }) {
+export default function DashboardPage({ getAccessToken, onSelectAgent, onNavigateTab, userName = "" }) {
     const [stats, setStats] = useState({
         totalAgents: 0,
         activeAgents: 0,
@@ -65,6 +65,17 @@ export default function DashboardPage({ getAccessToken, onSelectAgent, userName 
     useEffect(() => {
         loadDashboardData();
     }, [loadDashboardData]);
+
+    const navigateToTab = useCallback((tabId) => {
+        if (typeof onNavigateTab === "function") {
+            onNavigateTab(tabId);
+            return;
+        }
+        const fallbackTab = document.querySelector(`[data-tab="${tabId}"]`);
+        if (fallbackTab) {
+            fallbackTab.click();
+        }
+    }, [onNavigateTab]);
 
     const statCards = [
         {
@@ -145,21 +156,13 @@ export default function DashboardPage({ getAccessToken, onSelectAgent, userName 
                 <div className="mt-4 flex flex-wrap gap-3">
                     <button
                         className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-                        onClick={() => {
-                            // Navigate to agents tab
-                            const agentsTab = document.querySelector('[data-tab="agents"]');
-                            if (agentsTab) agentsTab.click();
-                        }}
+                        onClick={() => navigateToTab("agents")}
                     >
                         + New Agent
                     </button>
                     <button
                         className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                        onClick={() => {
-                            // Navigate to audit tab
-                            const auditTab = document.querySelector('[data-tab="audit"]');
-                            if (auditTab) auditTab.click();
-                        }}
+                        onClick={() => navigateToTab("audit")}
                     >
                         View Audit Log
                     </button>
@@ -178,12 +181,9 @@ export default function DashboardPage({ getAccessToken, onSelectAgent, userName 
                     <h3 className="text-lg font-semibold text-slate-900">Recent Activity</h3>
                     <button
                         className="text-sm font-medium text-blue-600 hover:text-blue-700"
-                        onClick={() => {
-                            const auditTab = document.querySelector('[data-tab="audit"]');
-                            if (auditTab) auditTab.click();
-                        }}
+                        onClick={() => navigateToTab("audit")}
                     >
-                        View All →
+                        View All
                     </button>
                 </div>
 
@@ -237,3 +237,4 @@ export default function DashboardPage({ getAccessToken, onSelectAgent, userName 
         </div>
     );
 }
+

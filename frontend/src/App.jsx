@@ -252,6 +252,7 @@ function ControlPlaneApp({
               <DashboardPage
                 getAccessToken={getAccessToken}
                 onSelectAgent={handleSelectAgent}
+                onNavigateTab={setTab}
                 userName={userName}
               />
             ) : null}

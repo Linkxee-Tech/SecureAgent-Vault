@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
     HomeIcon,
     CubeIcon,
@@ -10,25 +9,29 @@ import {
     ChartBarIcon,
     Cog6ToothIcon,
     UsersIcon,
+    LockClosedIcon,
     ArrowRightOnRectangleIcon,
     XMarkIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Sidebar({ currentTab, onTabChange, userLabel, onSignOut, devBypassAuth, isOpen, onClose, rbac = {} }) {
     const navItems = [
-        { id: "dashboard", label: "Dashboard", icon: HomeIcon, show: true },
-        { id: "agents", label: "Agents", icon: CubeIcon, show: rbac.canReadAgents },
-        { id: "tokens", label: "Tokens", icon: KeyIcon, show: rbac.canUpdateAgents },
-        { id: "inspector", label: "Inspector", icon: IdentificationIcon, show: rbac.canReadAgents },
-        { id: "playground", label: "Playground", icon: CommandLineIcon, show: rbac.canCreateAgents },
-        { id: "audit", label: "Audit Logs", icon: DocumentTextIcon, show: rbac.canReadAudit },
-        { id: "developer", label: "Developer", icon: CodeBracketIcon, show: true },
-        { id: "security", label: "Security", icon: ChartBarIcon, show: rbac.canReadAudit },
-        { id: "admin", label: "Admin", icon: UsersIcon, show: rbac.isAdmin },
-        { id: "settings", label: "Settings", icon: Cog6ToothIcon, show: true },
-    ].filter(item => item.show !== false);
+        { id: "dashboard", label: "Dashboard", icon: HomeIcon, enabled: true },
+        { id: "agents", label: "Agents", icon: CubeIcon, enabled: !!rbac.canReadAgents, requiredScope: "read:agents" },
+        { id: "tokens", label: "Tokens", icon: KeyIcon, enabled: !!rbac.canUpdateAgents, requiredScope: "update:agents" },
+        { id: "inspector", label: "Inspector", icon: IdentificationIcon, enabled: !!rbac.canReadAgents, requiredScope: "read:agents" },
+        { id: "playground", label: "Playground", icon: CommandLineIcon, enabled: !!rbac.canCreateAgents, requiredScope: "create:agents" },
+        { id: "audit", label: "Audit Logs", icon: DocumentTextIcon, enabled: !!rbac.canReadAudit, requiredScope: "read:audit" },
+        { id: "developer", label: "Developer", icon: CodeBracketIcon, enabled: true },
+        { id: "security", label: "Security", icon: ChartBarIcon, enabled: !!rbac.canReadAudit, requiredScope: "read:audit" },
+        { id: "admin", label: "Admin", icon: UsersIcon, enabled: !!rbac.isAdmin, requiredScope: "admin:*" },
+        { id: "settings", label: "Settings", icon: Cog6ToothIcon, enabled: true },
+    ];
 
-    const handleTabChange = (id) => {
+    const handleTabChange = (id, enabled) => {
+        if (!enabled) {
+            return;
+        }
         onTabChange(id);
         if (onClose) onClose(); // Close drawer on mobile after tap
     };
@@ -62,14 +65,19 @@ export default function Sidebar({ currentTab, onTabChange, userLabel, onSignOut,
             <nav className="flex-1 overflow-y-auto space-y-0.5 p-3">
                 {navItems.map((item) => {
                     const isActive = currentTab === item.id;
+                    const isLocked = !item.enabled;
                     return (
                         <button
                             key={item.id}
                             data-tab={item.id}
-                            onClick={() => handleTabChange(item.id)}
+                            onClick={() => handleTabChange(item.id, item.enabled)}
+                            disabled={isLocked}
+                            title={isLocked && item.requiredScope ? `Requires ${item.requiredScope}` : item.label}
                             className={`relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${isActive
                                 ? "bg-blue-600/20 text-white border border-blue-500/30"
-                                : "text-slate-300 hover:bg-slate-700/60 hover:text-white border border-transparent"
+                                : isLocked
+                                    ? "text-slate-500 border border-transparent cursor-not-allowed opacity-70"
+                                    : "text-slate-300 hover:bg-slate-700/60 hover:text-white border border-transparent"
                                 }`}
                         >
                             {isActive && (
@@ -77,6 +85,7 @@ export default function Sidebar({ currentTab, onTabChange, userLabel, onSignOut,
                             )}
                             <item.icon className="h-5 w-5 flex-shrink-0" />
                             <span className="truncate">{item.label}</span>
+                            {isLocked ? <LockClosedIcon className="ml-auto h-4 w-4 text-slate-500" /> : null}
                         </button>
                     );
                 })}

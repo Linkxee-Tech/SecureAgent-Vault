@@ -9,6 +9,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 const DEV_BYPASS_AUTH = import.meta.env.VITE_DEV_BYPASS_AUTH === "true";
 const DEFAULT_AUTH0_SCOPE =
   "openid profile email offline_access name read:agents create:agents update:agents delete:agents rotate:secret revoke:agent read:audit admin";
+const REQUIRED_API_SCOPES = ["read:agents", "read:audit"];
+const LEGACY_SCOPE_ALIASES = {
+  "write:agents": ["read:agents", "create:agents", "update:agents", "delete:agents"],
+};
 const requiredAuthEnv = {
   VITE_AUTH0_DOMAIN: import.meta.env.VITE_AUTH0_DOMAIN,
   VITE_AUTH0_CLIENT_ID: import.meta.env.VITE_AUTH0_CLIENT_ID,
@@ -33,6 +37,36 @@ function getMissingKeys(values) {
   return Object.entries(values)
     .filter(([key, value]) => isMissingValue(key, value))
     .map(([key]) => key);
+}
+
+function _tokenizeScope(rawScope) {
+  return String(rawScope || "")
+    .replace(/,/g, " ")
+    .split(/\s+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeScope(rawScope) {
+  const initial = _tokenizeScope(rawScope || DEFAULT_AUTH0_SCOPE);
+  const unique = [];
+  const seen = new Set();
+  const pushScope = (scope) => {
+    if (!scope || seen.has(scope)) {
+      return;
+    }
+    seen.add(scope);
+    unique.push(scope);
+  };
+
+  initial.forEach(pushScope);
+  for (const [legacyScope, aliases] of Object.entries(LEGACY_SCOPE_ALIASES)) {
+    if (seen.has(legacyScope)) {
+      aliases.forEach(pushScope);
+    }
+  }
+  REQUIRED_API_SCOPES.forEach(pushScope);
+  return unique.join(" ");
 }
 
 function Bootstrap() {
@@ -67,7 +101,7 @@ function Bootstrap() {
           domain: requiredAuthEnv.VITE_AUTH0_DOMAIN,
           clientId: requiredAuthEnv.VITE_AUTH0_CLIENT_ID,
           audience: requiredAuthEnv.VITE_AUTH0_AUDIENCE,
-          scope: import.meta.env.VITE_AUTH0_SCOPE || DEFAULT_AUTH0_SCOPE,
+          scope: normalizeScope(import.meta.env.VITE_AUTH0_SCOPE || DEFAULT_AUTH0_SCOPE),
           source: "frontend-env",
         },
         missingKeys: [],
@@ -117,10 +151,11 @@ function Bootstrap() {
               domain: payload.auth0_domain,
               clientId: payload.auth0_client_id,
               audience: payload.auth0_audience,
-              scope:
-                import.meta.env.VITE_AUTH0_SCOPE ||
+              scope: normalizeScope(
                 payload.auth0_scope ||
-                DEFAULT_AUTH0_SCOPE,
+                  import.meta.env.VITE_AUTH0_SCOPE ||
+                  DEFAULT_AUTH0_SCOPE
+              ),
               source: "backend-public-config",
             },
             missingKeys: [],
@@ -188,6 +223,7 @@ function Bootstrap() {
       }}
       cacheLocation="localstorage"
       useRefreshTokens
+      useRefreshTokensFallback
     >
       <App authConfigMissing={false} authConfig={state.authConfig} />
     </Auth0Provider>

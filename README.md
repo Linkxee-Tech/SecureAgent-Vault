@@ -13,7 +13,7 @@ Token broker for issuing short-lived, scoped JWTs to automated agents based on i
 ## Core Capabilities
 
 - Auth0 JWKS access-token validation.
-- Scope enforcement: `read:agents`, `write:agents`, `read:audit`, `admin`.
+- Scope enforcement: `read:agents`, `create:agents`, `update:agents`, `delete:agents`, `rotate:secret`, `revoke:agent`, `read:audit`, `admin`.
 - Agent management: CRUD, secret rotation, AES-256-GCM API key encryption.
 - Token issuance: bcrypt secret verification, HS256 JWT generation, Redis rate limiting.
 - Auditing: SHA-256 chained log entries.

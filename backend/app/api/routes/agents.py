@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Request, Response, status
@@ -116,15 +117,17 @@ async def create_agent(
     dependencies=[Depends(require_auth0_scopes({"read:agents"}))],
 )
 async def list_agents(
-    payload: dict[str, Any] = Depends(get_auth0_payload),
+    auth0_payload: dict[str, Any] = Depends(get_auth0_payload),
     db: AsyncSession = Depends(get_db),
 ) -> list[AgentOut]:
-    if can_view_global(payload):
+    if can_view_global(auth0_payload):
         result = await db.execute(select(Agent).order_by(Agent.created_at.desc()))
     else:
+        sub = auth0_payload.get("sub")
         result = await db.execute(
             select(Agent)
-            .where(Agent.user_id == current_user.id)
+            .join(User, User.id == Agent.user_id)
+            .where(User.auth0_id == sub)
             .order_by(Agent.created_at.desc())
         )
     return list(result.scalars().all())
@@ -138,10 +141,10 @@ async def list_agents(
 async def update_agent(
     agent_id: UUID,
     payload: AgentUpdate,
-    payload: dict[str, Any] = Depends(get_auth0_payload),
+    auth0_payload: dict[str, Any] = Depends(get_auth0_payload),
     db: AsyncSession = Depends(get_db),
 ) -> AgentOut:
-    agent = await _get_owned_agent(db, payload, agent_id)
+    agent = await _get_owned_agent(db, auth0_payload, agent_id)
 
     if payload.name is not None:
         agent.name = payload.name
@@ -214,10 +217,10 @@ async def rotate_agent_secret(
 async def store_agent_secret(
     agent_id: UUID,
     payload: AgentSecretStore,
-    payload: dict[str, Any] = Depends(get_auth0_payload),
+    auth0_payload: dict[str, Any] = Depends(get_auth0_payload),
     db: AsyncSession = Depends(get_db),
 ) -> SecretStoreResponse:
-    agent = await _get_owned_agent(db, payload, agent_id)
+    agent = await _get_owned_agent(db, auth0_payload, agent_id)
     name = payload.name.strip()
     if not name:
         raise HTTPException(

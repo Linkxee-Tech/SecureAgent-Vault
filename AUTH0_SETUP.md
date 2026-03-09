@@ -10,7 +10,11 @@ Create or select an Auth0 tenant.
 4. Algorithm: `RS256`
 5. Scopes (Permissions tab):
    - `read:agents`
-   - `write:agents`
+   - `create:agents`
+   - `update:agents`
+   - `delete:agents`
+   - `rotate:secret`
+   - `revoke:agent`
    - `read:audit`
    - `admin`
 

@@ -36,7 +36,7 @@ async def get_public_config() -> PublicConfigResponse:
         auth0_domain=domain,
         auth0_client_id=client_id,
         auth0_audience=audience,
-        auth0_scope="read:agents write:agents read:audit admin",
+        auth0_scope="read:agents create:agents update:agents delete:agents rotate:secret revoke:agent read:audit admin",
         configured=configured,
         dev_bypass_auth=settings.dev_bypass_auth,
     )

@@ -298,6 +298,17 @@ class DependencyTests(unittest.IsolatedAsyncioTestCase):
         merged = deps.extract_auth0_scopes({"scp": ["read:agents", "read:audit"]})
         self.assertTrue({"read:agents", "read:audit"}.issubset(merged))
 
+    async def test_extract_auth0_scopes_reads_nested_custom_claims(self):
+        merged = deps.extract_auth0_scopes(
+            {
+                "https://secureagent.example.com/claims": {
+                    "permissions": ["read:agents"],
+                    "scope": "read:audit",
+                }
+            }
+        )
+        self.assertTrue({"read:agents", "read:audit"}.issubset(merged))
+
     async def test_require_auth0_scopes_guard(self):
         guard_ok = deps.require_auth0_scopes({"read:agents"})
         await guard_ok(payload={"scope": "read:agents create:agents"})

@@ -36,6 +36,8 @@ CUSTOM_SCOPE_SUFFIXES = (
     "_scopes",
 )
 
+SCOPE_CLAIM_KEYS = {"permissions", "scope", "scopes", "scp"}
+
 
 def _coerce_scopes(value: Any) -> set[str]:
     if isinstance(value, str):
@@ -51,12 +53,23 @@ def _coerce_scopes(value: Any) -> set[str]:
 
 
 def _extract_custom_scope_claims(payload: dict[str, Any]) -> set[str]:
-    custom_scopes: set[str] = set()
-    for key, value in payload.items():
-        key_lower = key.lower()
-        if key == "scp" or key_lower.endswith(CUSTOM_SCOPE_SUFFIXES):
-            custom_scopes.update(_coerce_scopes(value))
-    return custom_scopes
+    return _extract_scope_claims(payload)
+
+
+def _extract_scope_claims(payload: Any) -> set[str]:
+    discovered: set[str] = set()
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            key_lower = str(key).lower()
+            if key_lower in SCOPE_CLAIM_KEYS or key_lower.endswith(CUSTOM_SCOPE_SUFFIXES):
+                discovered.update(_coerce_scopes(value))
+            if isinstance(value, (dict, list, tuple, set)):
+                discovered.update(_extract_scope_claims(value))
+    elif isinstance(payload, (list, tuple, set)):
+        for item in payload:
+            if isinstance(item, (dict, list, tuple, set)):
+                discovered.update(_extract_scope_claims(item))
+    return discovered
 
 
 def _warn_dev_bypass() -> None:
@@ -128,11 +141,7 @@ async def get_auth0_payload(
 
 
 def extract_auth0_scopes(payload: dict[str, Any]) -> set[str]:
-    permission_set = _coerce_scopes(payload.get("permissions", []))
-    scope_set = _coerce_scopes(payload.get("scope", ""))
-    scp_set = _coerce_scopes(payload.get("scp", []))
-    custom_scope_set = _extract_custom_scope_claims(payload)
-    granted = permission_set | scope_set | scp_set | custom_scope_set
+    granted = _extract_custom_scope_claims(payload)
     expanded = set(granted)
     for legacy_scope, aliases in LEGACY_SCOPE_ALIASES.items():
         if legacy_scope in granted:

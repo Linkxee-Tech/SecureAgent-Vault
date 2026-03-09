@@ -24,6 +24,40 @@ LEGACY_SCOPE_ALIASES: dict[str, set[str]] = {
     "write:agents": {"read:agents", "create:agents", "update:agents", "delete:agents"},
 }
 
+CUSTOM_SCOPE_SUFFIXES = (
+    "/permissions",
+    ":permissions",
+    "_permissions",
+    "/scope",
+    ":scope",
+    "_scope",
+    "/scopes",
+    ":scopes",
+    "_scopes",
+)
+
+
+def _coerce_scopes(value: Any) -> set[str]:
+    if isinstance(value, str):
+        normalized = value.replace(",", " ")
+        return {part for part in normalized.split() if part}
+    if isinstance(value, (list, tuple, set)):
+        combined: set[str] = set()
+        for item in value:
+            if isinstance(item, str):
+                combined.update(_coerce_scopes(item))
+        return combined
+    return set()
+
+
+def _extract_custom_scope_claims(payload: dict[str, Any]) -> set[str]:
+    custom_scopes: set[str] = set()
+    for key, value in payload.items():
+        key_lower = key.lower()
+        if key == "scp" or key_lower.endswith(CUSTOM_SCOPE_SUFFIXES):
+            custom_scopes.update(_coerce_scopes(value))
+    return custom_scopes
+
 
 def _warn_dev_bypass() -> None:
     """Warn if dev auth bypass is enabled."""
@@ -94,15 +128,11 @@ async def get_auth0_payload(
 
 
 def extract_auth0_scopes(payload: dict[str, Any]) -> set[str]:
-    permissions = payload.get("permissions", [])
-    if isinstance(permissions, str):
-        permission_set = set(permissions.split())
-    else:
-        permission_set = set(permissions)
-
-    raw_scope = payload.get("scope", "")
-    scope_set = set(raw_scope.split()) if isinstance(raw_scope, str) else set()
-    granted = permission_set | scope_set
+    permission_set = _coerce_scopes(payload.get("permissions", []))
+    scope_set = _coerce_scopes(payload.get("scope", ""))
+    scp_set = _coerce_scopes(payload.get("scp", []))
+    custom_scope_set = _extract_custom_scope_claims(payload)
+    granted = permission_set | scope_set | scp_set | custom_scope_set
     expanded = set(granted)
     for legacy_scope, aliases in LEGACY_SCOPE_ALIASES.items():
         if legacy_scope in granted:

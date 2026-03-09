@@ -99,11 +99,11 @@ export default function LandingPage() {
                             <div className="w-full border-t border-slate-200"></div>
                         </div>
                         <div className="relative flex justify-center text-sm">
-                            <span className="bg-white px-4 text-slate-500 font-medium">Judge Demo</span>
+                            <span className="bg-white px-4 text-slate-500 font-medium">Quick Access</span>
                         </div>
                     </div>
 
-                    {/* Demo Account for Judges */}
+                    {/* Preview Account */}
                     <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
@@ -111,7 +111,7 @@ export default function LandingPage() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
                             </div>
-                            <p className="text-sm font-bold text-slate-900 uppercase tracking-wide">Judge Access</p>
+                            <p className="text-sm font-bold text-slate-900 uppercase tracking-wide">Preview Access</p>
                         </div>
 
                         <p className="text-sm text-slate-600 leading-relaxed">
@@ -148,7 +148,7 @@ export default function LandingPage() {
                                 }
                                 className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-slate-800"
                             >
-                                Log in as Demo User
+                                Log in as Preview User
                             </button>
                         </div>
                     </div>

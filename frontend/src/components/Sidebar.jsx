@@ -1,30 +1,32 @@
 import { useState } from "react";
 import {
-    ChartBarIcon,
-    CubeIcon,
-    DocumentTextIcon,
     HomeIcon,
-    Cog6ToothIcon,
-    ArrowRightOnRectangleIcon,
+    CubeIcon,
     KeyIcon,
-    CommandLineIcon,
     IdentificationIcon,
+    CommandLineIcon,
+    DocumentTextIcon,
     CodeBracketIcon,
+    ChartBarIcon,
+    Cog6ToothIcon,
+    UsersIcon,
+    ArrowRightOnRectangleIcon,
     XMarkIcon,
 } from "@heroicons/react/24/outline";
 
-export default function Sidebar({ currentTab, onTabChange, userLabel, onSignOut, devBypassAuth, isOpen, onClose }) {
+export default function Sidebar({ currentTab, onTabChange, userLabel, onSignOut, devBypassAuth, isOpen, onClose, rbac = {} }) {
     const navItems = [
-        { id: "dashboard", label: "Dashboard", icon: HomeIcon },
-        { id: "agents", label: "Agents", icon: CubeIcon },
-        { id: "tokens", label: "Tokens", icon: KeyIcon },
-        { id: "inspector", label: "Inspector", icon: IdentificationIcon },
-        { id: "playground", label: "Playground", icon: CommandLineIcon },
-        { id: "audit", label: "Audit Logs", icon: DocumentTextIcon },
-        { id: "developer", label: "Developer", icon: CodeBracketIcon },
-        { id: "security", label: "Security", icon: ChartBarIcon },
-        { id: "settings", label: "Settings", icon: Cog6ToothIcon },
-    ];
+        { id: "dashboard", label: "Dashboard", icon: HomeIcon, show: true },
+        { id: "agents", label: "Agents", icon: CubeIcon, show: rbac.canReadAgents },
+        { id: "tokens", label: "Tokens", icon: KeyIcon, show: rbac.canUpdateAgents },
+        { id: "inspector", label: "Inspector", icon: IdentificationIcon, show: rbac.canReadAgents },
+        { id: "playground", label: "Playground", icon: CommandLineIcon, show: rbac.canCreateAgents },
+        { id: "audit", label: "Audit Logs", icon: DocumentTextIcon, show: rbac.canReadAudit },
+        { id: "developer", label: "Developer", icon: CodeBracketIcon, show: true },
+        { id: "security", label: "Security", icon: ChartBarIcon, show: rbac.canReadAudit },
+        { id: "admin", label: "Admin", icon: UsersIcon, show: rbac.isAdmin },
+        { id: "settings", label: "Settings", icon: Cog6ToothIcon, show: true },
+    ].filter(item => item.show !== false);
 
     const handleTabChange = (id) => {
         onTabChange(id);

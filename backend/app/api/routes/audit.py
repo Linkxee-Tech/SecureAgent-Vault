@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db, require_auth0_scopes
+from app.api.deps import get_current_user, get_db, require_auth0_scopes, get_auth0_payload, can_view_global
 from app.models.agent import Agent
 from app.models.audit_log import AuditLog
 from app.models.user import User
@@ -20,13 +20,15 @@ async def get_audit_logs(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_user),
+    payload: dict = Depends(get_auth0_payload),
     db: AsyncSession = Depends(get_db),
 ) -> list[AuditLogOut]:
+    query = select(AuditLog, Agent.name).join(Agent, Agent.id == AuditLog.agent_id, isouter=True)
+    if not can_view_global(payload):
+        query = query.where(Agent.user_id == current_user.id)
+        
     result = await db.execute(
-        select(AuditLog, Agent.name)
-        .join(Agent, Agent.id == AuditLog.agent_id, isouter=True)
-        .where(AuditLog.user_id == current_user.id)
-        .order_by(AuditLog.timestamp.desc())
+        query.order_by(AuditLog.timestamp.desc())
         .limit(limit)
         .offset(offset)
     )

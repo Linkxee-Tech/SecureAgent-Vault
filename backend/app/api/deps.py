@@ -80,7 +80,7 @@ async def get_auth0_payload(
     return await validator.validate_access_token(credentials.credentials)
 
 
-def _extract_auth0_scopes(payload: dict[str, Any]) -> set[str]:
+def extract_auth0_scopes(payload: dict[str, Any]) -> set[str]:
     permissions = payload.get("permissions", [])
     if isinstance(permissions, str):
         permission_set = set(permissions.split())
@@ -90,6 +90,21 @@ def _extract_auth0_scopes(payload: dict[str, Any]) -> set[str]:
     raw_scope = payload.get("scope", "")
     scope_set = set(raw_scope.split()) if isinstance(raw_scope, str) else set()
     return permission_set | scope_set
+
+
+def can_view_global(payload: dict[str, Any]) -> bool:
+    """
+    Returns True if the user should bypass ownership filters for reading (e.g., Admin or Auditor).
+    Based on the RBAC plan, Auditors have `read:audit` and `read:agents`, but lack `request:token`.
+    Admins have scopes starting with `admin:`.
+    """
+    scopes = extract_auth0_scopes(payload)
+    if any(s.startswith("admin:") for s in scopes):
+        return True
+    # Auditor persona: has read:audit but lacks request:token (which agent managers/standard users have)
+    if "read:audit" in scopes and "request:token" not in scopes:
+        return True
+    return False
 
 
 async def get_current_user(
@@ -128,7 +143,7 @@ def require_auth0_scopes(required_scopes: set[str]) -> Callable[[dict[str, Any]]
     async def _inner(
         payload: dict[str, Any] = Depends(get_auth0_payload),
     ) -> dict[str, Any]:
-        granted = _extract_auth0_scopes(payload)
+        granted = extract_auth0_scopes(payload)
         audience = payload.get("aud", "")
         
         # If the token is for the Management API, Auth0 strips custom scopes.

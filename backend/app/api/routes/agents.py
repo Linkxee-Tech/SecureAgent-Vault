@@ -6,7 +6,7 @@ from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db, get_redis, require_auth0_scopes
+from app.api.deps import get_current_user, get_db, get_redis, require_auth0_scopes, get_auth0_payload, can_view_global
 from app.core.config import get_settings
 from app.core.security import extract_bearer_token, generate_agent_secret, hash_secret, verify_secret
 from app.models.agent import Agent
@@ -35,10 +35,16 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 settings = get_settings()
 
 
-async def _get_owned_agent(db: AsyncSession, user_id: UUID, agent_id: UUID) -> Agent:
-    result = await db.execute(
-        select(Agent).where(Agent.id == agent_id, Agent.user_id == user_id)
-    )
+async def _get_owned_agent(db: AsyncSession, payload: dict[str, Any], agent_id: UUID) -> Agent:
+    if can_view_global(payload):
+        result = await db.execute(select(Agent).where(Agent.id == agent_id))
+    else:
+        sub = payload.get("sub")
+        result = await db.execute(
+            select(Agent)
+            .join(User, User.id == Agent.user_id)
+            .where(Agent.id == agent_id, User.auth0_id == sub)
+        )
     agent = result.scalar_one_or_none()
     if agent is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found.")
@@ -77,7 +83,7 @@ async def _blacklist_recent_agent_tokens(
     "",
     response_model=AgentCreateResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_auth0_scopes({"write:agents"}))],
+    dependencies=[Depends(require_auth0_scopes({"create:agents"}))],
 )
 async def create_agent(
     payload: AgentCreate,
@@ -110,29 +116,32 @@ async def create_agent(
     dependencies=[Depends(require_auth0_scopes({"read:agents"}))],
 )
 async def list_agents(
-    current_user: User = Depends(get_current_user),
+    payload: dict[str, Any] = Depends(get_auth0_payload),
     db: AsyncSession = Depends(get_db),
-) -> list[Agent]:
-    result = await db.execute(
-        select(Agent)
-        .where(Agent.user_id == current_user.id)
-        .order_by(Agent.created_at.desc())
-    )
+) -> list[AgentOut]:
+    if can_view_global(payload):
+        result = await db.execute(select(Agent).order_by(Agent.created_at.desc()))
+    else:
+        result = await db.execute(
+            select(Agent)
+            .where(Agent.user_id == current_user.id)
+            .order_by(Agent.created_at.desc())
+        )
     return list(result.scalars().all())
 
 
 @router.patch(
     "/{agent_id}",
     response_model=AgentOut,
-    dependencies=[Depends(require_auth0_scopes({"write:agents"}))],
+    dependencies=[Depends(require_auth0_scopes({"update:agents"}))],
 )
 async def update_agent(
     agent_id: UUID,
     payload: AgentUpdate,
-    current_user: User = Depends(get_current_user),
+    payload: dict[str, Any] = Depends(get_auth0_payload),
     db: AsyncSession = Depends(get_db),
-) -> Agent:
-    agent = await _get_owned_agent(db, current_user.id, agent_id)
+) -> AgentOut:
+    agent = await _get_owned_agent(db, payload, agent_id)
 
     if payload.name is not None:
         agent.name = payload.name
@@ -150,16 +159,16 @@ async def update_agent(
     "/{agent_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     response_class=Response,
-    dependencies=[Depends(require_auth0_scopes({"write:agents"}))],
+    dependencies=[Depends(require_auth0_scopes({"delete:agents"}))],
 )
 async def delete_agent(
     agent_id: UUID,
     request: Request,
-    current_user: User = Depends(get_current_user),
+    payload: dict[str, Any] = Depends(get_auth0_payload),
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ) -> Response:
-    agent = await _get_owned_agent(db, current_user.id, agent_id)
+    agent = await _get_owned_agent(db, payload, agent_id)
     await _blacklist_recent_agent_tokens(
         db=db,
         redis=redis,
@@ -183,14 +192,14 @@ async def delete_agent(
 @router.post(
     "/{agent_id}/rotate-secret",
     response_model=AgentSecretRotateResponse,
-    dependencies=[Depends(require_auth0_scopes({"write:agents"}))],
+    dependencies=[Depends(require_auth0_scopes({"rotate:secret"}))],
 )
 async def rotate_agent_secret(
     agent_id: UUID,
-    current_user: User = Depends(get_current_user),
+    payload: dict[str, Any] = Depends(get_auth0_payload),
     db: AsyncSession = Depends(get_db),
 ) -> AgentSecretRotateResponse:
-    agent = await _get_owned_agent(db, current_user.id, agent_id)
+    agent = await _get_owned_agent(db, payload, agent_id)
     plain_secret = generate_agent_secret()
     agent.secret_hash = hash_secret(plain_secret)
     await db.commit()
@@ -200,15 +209,15 @@ async def rotate_agent_secret(
 @router.post(
     "/{agent_id}/secret",
     response_model=SecretStoreResponse,
-    dependencies=[Depends(require_auth0_scopes({"write:agents"}))],
+    dependencies=[Depends(require_auth0_scopes({"update:agents"}))],
 )
 async def store_agent_secret(
     agent_id: UUID,
     payload: AgentSecretStore,
-    current_user: User = Depends(get_current_user),
+    payload: dict[str, Any] = Depends(get_auth0_payload),
     db: AsyncSession = Depends(get_db),
 ) -> SecretStoreResponse:
-    agent = await _get_owned_agent(db, current_user.id, agent_id)
+    agent = await _get_owned_agent(db, payload, agent_id)
     name = payload.name.strip()
     if not name:
         raise HTTPException(
@@ -239,10 +248,10 @@ async def store_agent_secret(
 )
 async def list_agent_secrets(
     agent_id: UUID,
-    current_user: User = Depends(get_current_user),
+    payload: dict[str, Any] = Depends(get_auth0_payload),
     db: AsyncSession = Depends(get_db),
 ) -> list[AgentSecretOut]:
-    agent = await _get_owned_agent(db, current_user.id, agent_id)
+    agent = await _get_owned_agent(db, payload, agent_id)
     result = await db.execute(
         select(AgentSecret)
         .where(AgentSecret.agent_id == agent.id)
@@ -321,16 +330,16 @@ async def request_agent_token(
 @router.post(
     "/{agent_id}/revoke",
     response_model=RevokeResponse,
-    dependencies=[Depends(require_auth0_scopes({"write:agents", "admin"}))],
+    dependencies=[Depends(require_auth0_scopes({"revoke:agent"}))],
 )
 async def revoke_agent_tokens(
     agent_id: UUID,
     request: Request,
-    current_user: User = Depends(get_current_user),
+    payload: dict[str, Any] = Depends(get_auth0_payload),
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ) -> RevokeResponse:
-    agent = await _get_owned_agent(db, current_user.id, agent_id)
+    agent = await _get_owned_agent(db, payload, agent_id)
     agent.is_active = False
     await db.commit()
     revoked_count = await _blacklist_recent_agent_tokens(

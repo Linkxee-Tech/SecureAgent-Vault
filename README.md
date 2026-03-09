@@ -23,7 +23,7 @@ Token broker for issuing short-lived, scoped JWTs to automated agents based on i
 - [Architecture](ARCHITECTURE.md)
 - [Auth0 Setup](AUTH0_SETUP.md)
 - [Security](SECURITY.md)
-- [Demo](DEMO_SCRIPT.md)
+- [Operational Guide](USER_GUIDE.md)
 
 ## Development Setup
 

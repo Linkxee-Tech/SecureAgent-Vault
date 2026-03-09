@@ -13,9 +13,11 @@ import ToolsPlaygroundPage from "./pages/ToolsPlaygroundPage";
 import TokenInspectorPage from "./pages/TokenInspectorPage";
 import SecurityInsightsPage from "./pages/SecurityInsightsPage";
 import DeveloperPage from "./pages/DeveloperPage";
+import AdminPage from "./pages/AdminPage";
 import { NotFoundPage } from "./pages/ErrorPages";
 import Callback from "./pages/Callback";
 import TopNavbar from "./components/TopNavbar";
+import { usePermissions } from "./hooks/usePermissions";
 
 export default function App(props) {
   if (props.authConfigMissing) {
@@ -157,6 +159,8 @@ function ControlPlaneApp({ getAccessToken, userLabel, userName, user, onSignOut 
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const rbac = usePermissions(devBypassAuth);
+
   const refreshAgents = useCallback(() => {
     setReloadKey((value) => value + 1);
   }, []);
@@ -185,7 +189,8 @@ function ControlPlaneApp({ getAccessToken, userLabel, userName, user, onSignOut 
     audit: "Audit Trail",
     developer: "Developer Portal",
     security: "Security Insights",
-    settings: "Account Settings",
+    settings: "System Settings",
+    admin: "System Administration",
   };
 
   return (
@@ -199,6 +204,7 @@ function ControlPlaneApp({ getAccessToken, userLabel, userName, user, onSignOut 
         devBypassAuth={devBypassAuth}
         isOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
+        rbac={rbac}
       />
 
       {/* Main Content */}
@@ -237,6 +243,7 @@ function ControlPlaneApp({ getAccessToken, userLabel, userName, user, onSignOut 
                 selectedAgentId={selectedAgent?.id}
                 reloadKey={reloadKey}
                 onAgentsLoaded={onAgentsLoaded}
+                rbac={rbac}
               />
             ) : null}
 
@@ -252,6 +259,7 @@ function ControlPlaneApp({ getAccessToken, userLabel, userName, user, onSignOut 
                   setTab("agents");
                 }}
                 onRefreshAgents={refreshAgents}
+                rbac={rbac}
               />
             ) : null}
 
@@ -261,7 +269,8 @@ function ControlPlaneApp({ getAccessToken, userLabel, userName, user, onSignOut 
             {tab === "playground" ? <ToolsPlaygroundPage /> : null}
             {tab === "developer" ? <DeveloperPage /> : null}
             {tab === "security" ? <SecurityInsightsPage getAccessToken={getAccessToken} /> : null}
-            {tab === "settings" ? <SettingsPage user={user} /> : null}
+            {tab === "admin" ? <AdminPage rbac={rbac} /> : null}
+            {tab === "settings" ? <SettingsPage user={user} rbac={rbac} /> : null}
 
             {/* Catch-all for unknown tabs */}
             {!tabTitles[tab] && <NotFoundPage />}

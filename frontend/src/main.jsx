@@ -7,6 +7,8 @@ import "./index.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 const DEV_BYPASS_AUTH = import.meta.env.VITE_DEV_BYPASS_AUTH === "true";
+const DEFAULT_AUTH0_SCOPE =
+  "openid profile email offline_access name read:agents create:agents update:agents delete:agents rotate:secret revoke:agent read:audit admin";
 const requiredAuthEnv = {
   VITE_AUTH0_DOMAIN: import.meta.env.VITE_AUTH0_DOMAIN,
   VITE_AUTH0_CLIENT_ID: import.meta.env.VITE_AUTH0_CLIENT_ID,
@@ -65,7 +67,7 @@ function Bootstrap() {
           domain: requiredAuthEnv.VITE_AUTH0_DOMAIN,
           clientId: requiredAuthEnv.VITE_AUTH0_CLIENT_ID,
           audience: requiredAuthEnv.VITE_AUTH0_AUDIENCE,
-          scope: import.meta.env.VITE_AUTH0_SCOPE || "openid profile email offline_access read:agents write:agents read:audit admin",
+          scope: import.meta.env.VITE_AUTH0_SCOPE || DEFAULT_AUTH0_SCOPE,
           source: "frontend-env",
         },
         missingKeys: [],
@@ -118,7 +120,7 @@ function Bootstrap() {
               scope:
                 import.meta.env.VITE_AUTH0_SCOPE ||
                 payload.auth0_scope ||
-                "openid profile email offline_access read:agents write:agents read:audit admin",
+                DEFAULT_AUTH0_SCOPE,
               source: "backend-public-config",
             },
             missingKeys: [],
@@ -166,12 +168,13 @@ function Bootstrap() {
         authConfigMissing
         missingAuthEnv={state.missingKeys}
         bootstrapError={state.bootstrapError}
+        authConfig={null}
       />
     );
   }
 
   if (state.authConfig.mode === "dev-bypass") {
-    return <App authConfigMissing={false} devBypassAuth />;
+    return <App authConfigMissing={false} devBypassAuth authConfig={state.authConfig} />;
   }
 
   return (
@@ -186,7 +189,7 @@ function Bootstrap() {
       cacheLocation="localstorage"
       useRefreshTokens
     >
-      <App authConfigMissing={false} />
+      <App authConfigMissing={false} authConfig={state.authConfig} />
     </Auth0Provider>
   );
 }

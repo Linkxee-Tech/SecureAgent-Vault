@@ -99,7 +99,11 @@ alembic revision --autogenerate -m "ID"
 
 Bearer validation bounds:
 - `read:agents`
-- `write:agents`
+- `create:agents`
+- `update:agents`
+- `delete:agents`
+- `rotate:secret`
+- `revoke:agent`
 - `read:audit`
 - `admin`
 Agent endpoints internal bounding condition:

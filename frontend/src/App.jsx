@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import Sidebar from "./components/Sidebar";
 import DashboardPage from "./pages/DashboardPage";
@@ -18,6 +18,9 @@ import { NotFoundPage } from "./pages/ErrorPages";
 import Callback from "./pages/Callback";
 import TopNavbar from "./components/TopNavbar";
 import { usePermissions } from "./hooks/usePermissions";
+
+const DEFAULT_AUTH0_SCOPE =
+  "openid profile email offline_access name read:agents create:agents update:agents delete:agents rotate:secret revoke:agent read:audit admin";
 
 export default function App(props) {
   if (props.authConfigMissing) {
@@ -101,17 +104,19 @@ function BypassApp() {
   );
 }
 
-function AuthenticatedApp() {
+function AuthenticatedApp({ authConfig }) {
   const { isAuthenticated, isLoading, logout, user, getAccessTokenSilently } = useAuth0();
+  const resolvedAudience = authConfig?.audience || import.meta.env.VITE_AUTH0_AUDIENCE;
+  const resolvedScope = authConfig?.scope || import.meta.env.VITE_AUTH0_SCOPE || DEFAULT_AUTH0_SCOPE;
 
   const getAccessToken = useCallback(() => {
     return getAccessTokenSilently({
       authorizationParams: {
-        audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-        scope: import.meta.env.VITE_AUTH0_SCOPE || "openid profile email offline_access name read:agents write:agents read:audit admin",
+        audience: resolvedAudience,
+        scope: resolvedScope,
       },
     });
-  }, [getAccessTokenSilently]);
+  }, [getAccessTokenSilently, resolvedAudience, resolvedScope]);
 
   if (isLoading) {
     return (
@@ -128,7 +133,13 @@ function AuthenticatedApp() {
     <Routes>
       <Route
         path="/"
-        element={!isAuthenticated ? <LandingPage /> : <Navigate to="/dashboard" replace />}
+        element={
+          !isAuthenticated ? (
+            <LandingPage authConfig={authConfig} />
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
+        }
       />
       <Route
         path="/dashboard"
@@ -141,6 +152,7 @@ function AuthenticatedApp() {
               user={user}
               onSignOut={() => logout({ logoutParams: { returnTo: window.location.origin } })}
               devBypassAuth={false}
+              authConfig={authConfig}
             />
           ) : (
             <Navigate to="/" replace />
@@ -153,13 +165,21 @@ function AuthenticatedApp() {
   );
 }
 
-function ControlPlaneApp({ getAccessToken, userLabel, userName, user, onSignOut = null, devBypassAuth = false }) {
+function ControlPlaneApp({
+  getAccessToken,
+  userLabel,
+  userName,
+  user,
+  onSignOut = null,
+  devBypassAuth = false,
+  authConfig = null,
+}) {
   const [tab, setTab] = useState("dashboard");
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const rbac = usePermissions(devBypassAuth);
+  const rbac = usePermissions(devBypassAuth, authConfig);
 
   const refreshAgents = useCallback(() => {
     setReloadKey((value) => value + 1);

@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 
+const DEFAULT_AUTH0_SCOPE =
+    "openid profile email offline_access name read:agents create:agents update:agents delete:agents rotate:secret revoke:agent read:audit admin";
+
 export function decodeJwtPermissions(token) {
     try {
         const base64Url = token.split(".")[1];
@@ -27,7 +30,7 @@ export function decodeJwtPermissions(token) {
     }
 }
 
-export function usePermissions(devBypassAuth) {
+export function usePermissions(devBypassAuth, authConfig = null) {
     const { getAccessTokenSilently, isAuthenticated, isLoading } = useAuth0();
     const [permissions, setPermissions] = useState([]);
     const [loadingPermissions, setLoadingPermissions] = useState(true);
@@ -53,8 +56,8 @@ export function usePermissions(devBypassAuth) {
                 try {
                     const token = await getAccessTokenSilently({
                         authorizationParams: {
-                            audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                            scope: import.meta.env.VITE_AUTH0_SCOPE,
+                            audience: authConfig?.audience || import.meta.env.VITE_AUTH0_AUDIENCE,
+                            scope: authConfig?.scope || import.meta.env.VITE_AUTH0_SCOPE || DEFAULT_AUTH0_SCOPE,
                         },
                     });
                     const decoded = decodeJwtPermissions(token);
@@ -72,7 +75,7 @@ export function usePermissions(devBypassAuth) {
         }
 
         loadPermissions();
-    }, [getAccessTokenSilently, isAuthenticated, isLoading, devBypassAuth]);
+    }, [getAccessTokenSilently, isAuthenticated, isLoading, devBypassAuth, authConfig]);
 
     // Expose boolean helper flags based on the enterprise RBAC dictionary
     const isAdmin = permissions.some(p => p.startsWith("admin:"));

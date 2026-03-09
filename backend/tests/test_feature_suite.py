@@ -262,7 +262,7 @@ class Auth0ValidatorTests(unittest.IsolatedAsyncioTestCase):
             "aud": settings.auth0_audience,
             "iss": settings.auth0_issuer,
             "exp": int((datetime.now(timezone.utc) + timedelta(minutes=5)).timestamp()),
-            "scope": "read:agents write:agents",
+            "scope": "read:agents create:agents update:agents delete:agents read:audit",
         }
         token = jwt.encode(payload, private_key, algorithm="RS256", headers={"kid": kid})
 
@@ -276,14 +276,18 @@ class Auth0ValidatorTests(unittest.IsolatedAsyncioTestCase):
 
 class DependencyTests(unittest.IsolatedAsyncioTestCase):
     async def test_extract_auth0_scopes_combines_permissions_and_scope(self):
-        merged = deps._extract_auth0_scopes(
-            {"permissions": ["read:agents"], "scope": "write:agents"}
+        merged = deps.extract_auth0_scopes(
+            {"permissions": ["read:agents"], "scope": "create:agents"}
         )
-        self.assertEqual(merged, {"read:agents", "write:agents"})
+        self.assertEqual(merged, {"read:agents", "create:agents"})
+
+    async def test_extract_auth0_scopes_expands_legacy_write_agents_scope(self):
+        merged = deps.extract_auth0_scopes({"scope": "write:agents"})
+        self.assertTrue({"read:agents", "create:agents", "update:agents", "delete:agents"}.issubset(merged))
 
     async def test_require_auth0_scopes_guard(self):
         guard_ok = deps.require_auth0_scopes({"read:agents"})
-        await guard_ok(payload={"scope": "read:agents write:agents"})
+        await guard_ok(payload={"scope": "read:agents create:agents"})
 
         guard_fail = deps.require_auth0_scopes({"admin"})
         with self.assertRaises(HTTPException) as denied:
@@ -323,7 +327,7 @@ class ToolsRouteTests(unittest.TestCase):
             token_bad, _, _ = create_vault_token(
                 agent_id=str(uuid.uuid4()),
                 user_id=str(uuid.uuid4()),
-                scopes=["write:weather"],
+                scopes=["other:scope"],
             )
 
             with TestClient(app) as client:
@@ -400,7 +404,7 @@ class AgentRouteLogicTests(unittest.IsolatedAsyncioTestCase):
             listed_agent.id = uuid.uuid4()
             listed_agent.created_at = datetime.now(timezone.utc)
             listed = await agents_routes.list_agents(
-                current_user=user,
+                auth0_payload={"sub": "auth0|owner"},
                 db=FakeDB([FakeScalarResult(scalars_list=[listed_agent])]),
             )
             self.assertEqual(len(listed), 1)
@@ -413,7 +417,7 @@ class AgentRouteLogicTests(unittest.IsolatedAsyncioTestCase):
                     allowed_scopes=["read:weather", "write:calendar"],
                     is_active=False,
                 ),
-                current_user=user,
+                auth0_payload={"sub": "auth0|owner"},
                 db=FakeDB(),
             )
             self.assertEqual(updated.name, "UpdatedBot")
@@ -421,7 +425,7 @@ class AgentRouteLogicTests(unittest.IsolatedAsyncioTestCase):
 
             rotated = await agents_routes.rotate_agent_secret(
                 agent_id=target_agent.id,
-                current_user=user,
+                payload={"sub": "auth0|owner"},
                 db=FakeDB(),
             )
             self.assertEqual(rotated.agent_id, target_agent.id)
@@ -430,7 +434,7 @@ class AgentRouteLogicTests(unittest.IsolatedAsyncioTestCase):
             stored = await agents_routes.store_agent_secret(
                 agent_id=target_agent.id,
                 payload=AgentSecretStore(api_key="secret-key"),
-                current_user=user,
+                auth0_payload={"sub": "auth0|owner"},
                 db=FakeDB(),
             )
             self.assertEqual(stored.status, "stored")
@@ -470,7 +474,7 @@ class AgentRouteLogicTests(unittest.IsolatedAsyncioTestCase):
             revoke_result = await agents_routes.revoke_agent_tokens(
                 agent_id=target_agent.id,
                 request=SimpleNamespace(client=SimpleNamespace(host="127.0.0.1")),
-                current_user=user,
+                payload={"sub": "auth0|owner"},
                 db=FakeDB(),
                 redis=FakeRedis(),
             )
@@ -480,7 +484,7 @@ class AgentRouteLogicTests(unittest.IsolatedAsyncioTestCase):
             delete_result = await agents_routes.delete_agent(
                 agent_id=target_agent.id,
                 request=SimpleNamespace(client=SimpleNamespace(host="127.0.0.1")),
-                current_user=user,
+                payload={"sub": "auth0|owner"},
                 db=FakeDB(),
                 redis=FakeRedis(),
             )
@@ -523,7 +527,7 @@ class AgentRouteLogicTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(agents_routes, "_get_owned_agent", side_effect=fake_get_owned_agent):
             result = await agents_routes.list_agent_secrets(
                 agent_id=agent.id,
-                current_user=user,
+                payload={"sub": "auth0|owner"},
                 db=FakeDB([FakeScalarResult(scalars_list=[secret])]),
             )
         self.assertEqual(len(result), 1)
@@ -552,6 +556,7 @@ class AuditRouteLogicTests(unittest.IsolatedAsyncioTestCase):
             limit=50,
             offset=0,
             current_user=user,
+            auth0_payload={"sub": "auth0|audit-user"},
             db=FakeDB([FakeScalarResult(rows=[(entry, "WeatherBot")])]),
         )
         self.assertEqual(len(rows), 1)

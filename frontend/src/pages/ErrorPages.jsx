@@ -72,7 +72,9 @@ export function UnauthorizedPage() {
             <div className="mt-12 p-4 bg-slate-50 border border-slate-100 rounded-2xl max-w-md mx-auto">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Security Recommendation</p>
                 <p className="text-[11px] text-slate-600 leading-relaxed italic">
-                    "Ensure your Auth0 session is valid and your account has the <code className="text-blue-600">admin</code> or <code className="text-blue-600">write:agents</code> scope assigned."
+                    Ensure your Auth0 session is valid and your account has the{" "}
+                    <code className="text-blue-600">admin</code> or{" "}
+                    <code className="text-blue-600">read:agents</code> scope assigned.
                 </p>
             </div>
         </div>

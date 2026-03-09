@@ -20,6 +20,10 @@ auth0_bearer = HTTPBearer(auto_error=False)
 vault_bearer = HTTPBearer(auto_error=False)
 settings = get_settings()
 
+LEGACY_SCOPE_ALIASES: dict[str, set[str]] = {
+    "write:agents": {"read:agents", "create:agents", "update:agents", "delete:agents"},
+}
+
 
 def _warn_dev_bypass() -> None:
     """Warn if dev auth bypass is enabled."""
@@ -46,8 +50,17 @@ def _dev_bypass_payload() -> dict[str, Any]:
     return {
         "sub": "dev|local-user",
         "email": "local-dev@example.com",
-        "scope": "read:agents write:agents read:audit admin",
-        "permissions": ["read:agents", "write:agents", "read:audit", "admin"],
+        "scope": "read:agents create:agents update:agents delete:agents rotate:secret revoke:agent read:audit admin",
+        "permissions": [
+            "read:agents",
+            "create:agents",
+            "update:agents",
+            "delete:agents",
+            "rotate:secret",
+            "revoke:agent",
+            "read:audit",
+            "admin"
+        ],
     }
 
 
@@ -89,7 +102,12 @@ def extract_auth0_scopes(payload: dict[str, Any]) -> set[str]:
 
     raw_scope = payload.get("scope", "")
     scope_set = set(raw_scope.split()) if isinstance(raw_scope, str) else set()
-    return permission_set | scope_set
+    granted = permission_set | scope_set
+    expanded = set(granted)
+    for legacy_scope, aliases in LEGACY_SCOPE_ALIASES.items():
+        if legacy_scope in granted:
+            expanded.update(aliases)
+    return expanded
 
 
 def can_view_global(payload: dict[str, Any]) -> bool:
@@ -151,6 +169,9 @@ def require_auth0_scopes(required_scopes: set[str]) -> Callable[[dict[str, Any]]
         is_management_api = isinstance(audience, str) and audience.endswith("api/v2/")
         is_management_api_in_list = isinstance(audience, list) and any(a.endswith("api/v2/") for a in audience)
         
+        if "admin" in granted or any(s.startswith("admin:") for s in granted):
+            return payload
+
         if not required_scopes.issubset(granted):
             if is_management_api or is_management_api_in_list:
                 import logging

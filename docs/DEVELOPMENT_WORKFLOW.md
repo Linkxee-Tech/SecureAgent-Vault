@@ -81,7 +81,11 @@ curl http://localhost:8000/api/v1/health
 2. API Configuration (Identifier: `https://secureagentvault/api`, ALGO: `RS256`).
 3. Scopes binding:
    - `read:agents`
-   - `write:agents`
+   - `create:agents`
+   - `update:agents`
+   - `delete:agents`
+   - `rotate:secret`
+   - `revoke:agent`
    - `read:audit`
    - `admin`
 4. Base token acquisition.
@@ -131,7 +135,7 @@ VITE_API_BASE_URL=/api/v1
 VITE_AUTH0_DOMAIN=YOUR_TENANT.auth0.com
 VITE_AUTH0_CLIENT_ID=YOUR_CLIENT_ID
 VITE_AUTH0_AUDIENCE=https://secureagentvault/api
-VITE_AUTH0_SCOPE=read:agents write:agents read:audit admin
+VITE_AUTH0_SCOPE=openid profile email offline_access read:agents create:agents update:agents delete:agents rotate:secret revoke:agent read:audit admin
 ```
 2. Build commands:
 ```bash

@@ -1,10 +1,15 @@
 import { useAuth0 } from "@auth0/auth0-react";
 
-export default function LandingPage() {
+const DEFAULT_AUTH0_SCOPE =
+    "openid profile email offline_access name read:agents create:agents update:agents delete:agents rotate:secret revoke:agent read:audit admin";
+
+export default function LandingPage({ authConfig = null }) {
     const { loginWithRedirect } = useAuth0();
 
-    const requestedScopes =
-        import.meta.env.VITE_AUTH0_SCOPE || "read:agents write:agents read:audit admin";
+    const authParams = {
+        audience: authConfig?.audience || import.meta.env.VITE_AUTH0_AUDIENCE,
+        scope: authConfig?.scope || import.meta.env.VITE_AUTH0_SCOPE || DEFAULT_AUTH0_SCOPE,
+    };
 
     return (
         <main className="flex min-h-screen flex-col lg:flex-row bg-slate-50">
@@ -81,10 +86,7 @@ export default function LandingPage() {
                         className="flex w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white shadow-xl shadow-blue-500/20 transition-all hover:bg-blue-700 hover:-translate-y-0.5"
                         onClick={() =>
                             loginWithRedirect({
-                                authorizationParams: {
-                                    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                                    scope: requestedScopes,
-                                },
+                                authorizationParams: authParams,
                             })
                         }
                     >
@@ -124,10 +126,7 @@ export default function LandingPage() {
                                 <button
                                     onClick={() =>
                                         loginWithRedirect({
-                                            authorizationParams: {
-                                                audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                                                scope: requestedScopes,
-                                            },
+                                            authorizationParams: authParams,
                                             loginHint: "demo@secureagent.local",
                                         })
                                     }
@@ -139,10 +138,7 @@ export default function LandingPage() {
                             <button
                                 onClick={() =>
                                     loginWithRedirect({
-                                        authorizationParams: {
-                                            audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                                            scope: requestedScopes,
-                                        },
+                                        authorizationParams: authParams,
                                         loginHint: "demo@secureagent.local",
                                     })
                                 }
